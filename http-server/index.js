@@ -1,5 +1,10 @@
 const http = require("http");
 const fs = require("fs");
+const getPort = () => {
+  const index = process.argv.indexOf('--port');
+  return index > -1 ? parseInt(process.argv[index + 1]) : 3000;
+}
+
 
 let homeContent = "";
 let projectContent = "";
@@ -48,7 +53,7 @@ const server = http
     }
   });
 
-  server.listen(5000);
+  server.listen(getPort());
 
 
 
