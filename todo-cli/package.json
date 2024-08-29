@@ -1,0 +1,32 @@
+{
+  "name": "todo-cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "todo.js",
+  "scripts": {
+    "test": "jest",
+    "prepare": "cd .. && husky install todo-cli/.husky"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint",
+      "prettier --write ."
+    ]
+  },
+  "author": "Jaideep <21951a0567@iare.ac.in>",
+  "license": "ISC",
+  "dependencies": {
+    "jest": "^29.7.0",
+    "pg": "^8.12.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "eslint": "^9.9.1",
+    "globals": "^15.9.0",
+    "husky": "^7.0.4",
+    "lint-staged": "^13.3.0",
+    "prettier": "^2.8.8"
+  }
+}
