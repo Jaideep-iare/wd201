@@ -43,7 +43,7 @@ module.exports = (sequelize, DataTypes) => {
       return Todo.findAll({
         where:{
           dueDate:{
-            [Op.lt]: new Date(), 
+            [Op.lt]: sequelize.literal("CURRENT_DATE"),
           },
         },
       });
@@ -54,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
       return Todo.findAll({
         where:{
           dueDate:{
-            [Op.eq]: new Date(), 
+            [Op.eq]: sequelize.literal("CURRENT_DATE"),
           },
         },
       });
@@ -65,7 +65,7 @@ module.exports = (sequelize, DataTypes) => {
       return Todo.findAll({
         where:{
           dueDate:{
-            [Op.gt]: new Date(), 
+            [Op.gt]: sequelize.literal("CURRENT_DATE"),
           },
         },
       });
@@ -82,7 +82,7 @@ module.exports = (sequelize, DataTypes) => {
 
     displayableString() {
       let checkbox = this.completed ? "[x]" : "[ ]";
-      return `${this.id}. ${checkbox} ${this.title} ${this.dueDate === new Date().toISOString().split("T")[0] ? "" : this.dueDate}`;
+      return `${this.id}. ${checkbox} ${this.title} ${this.dueDate === new Date().toISOString().split("T")[0] ? "" : this.dueDate}`.trim();
     }
   }
   Todo.init({
