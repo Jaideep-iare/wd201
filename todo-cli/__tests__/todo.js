@@ -1,4 +1,6 @@
 /* eslint-disable no-undef */
+const db = require("../models");
+
 const todoList = require("../todo");
 let yesterday = new Date(Date.now() - 86400000).toLocaleDateString("en-CA");
 let today = new Date().toLocaleDateString("en-CA");
@@ -13,7 +15,10 @@ describe("Todolist test suite", () => {
   //       dueDate: new Date().toLocaleDateString("en-CA"),
   //     });
   //   });
-
+  beforeAll(async () => {
+    await db.sequelize.sync({ force: true });
+  });
+  
   test("should add new todo", () => {
     expect(all.length).toBe(0);
     add({
