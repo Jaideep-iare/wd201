@@ -2,6 +2,7 @@ const request = require('supertest');
 const db = require("../models/index");
 
 const app = require("../app");
+const { Json } = require('sequelize/lib/utils');
 
 let server , agent; //server=express,agent = supertest, supertest is agent for server
 
@@ -81,7 +82,7 @@ describe("Todo test suite", ()=>{
         const todoId = parsedResponse.id;
         const deletedResponse = await agent.delete(`/todos/${todoId}`);
         expect(deletedResponse.statusCode).toBe(200);
-        expect(deletedResponse.text).toBe("Deletion successful");
+        expect(deletedResponse["text"]).toBe("true");
 
         //try to access the deleted todo
         const getTodo = await agent.get(`/todos/${todoId}`);

@@ -66,9 +66,9 @@ app.delete("/todos/:id",async(req, res) => {
     });
 
     if (count>0) {
-      return res.send("Deletion successful");
+      return res.send(true);
     } else {
-      return res.send("Deletion failed");
+      return res.send(false);
     }
   } catch (error) {
     res.status(422).json(error);
