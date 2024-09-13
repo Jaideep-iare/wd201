@@ -3,12 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>To-Do Manager</title>
     <link rel="stylesheet" href="./css/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <%- include("header.ejs") %>
-    <%- include("todos.ejs") %>
+    <div class="grid grid-cols-6">
+        <div class="col-start-3 col-span-2">
+            <%- include("header.ejs") %>
+            <form action="">
+                <div class="flex gap-2 py-4">
+                    <div class="flex-auto">
+                        <input type="text" name="" id="" placeholder="What's new?" required
+                        class="border border-grey-300 rounded text-grey text-sm p-2">
+                    </div>
+                    <div class="flex-auto">
+                        <input type="date" name="" id="" required
+                        class="border border-grey-300 rounded text-grey text-sm p-2 leading-4">
+                    </div>
+                    <div class="flex-none">
+                        <button type="submit"
+                        class="bg-green-600 px-5 py-1.5 text-white rounded font-medium mr-2 mb-2">Add</button>
+                    </div>
+                </div>
+            </form>
+            <div>
+                <!-- overdues -->
+                <h5>Overdue</h5>
+                <%var todos=overDue %>
+                <%-include("todos.ejs",{todos:todos,countType:"count-overdue"}) %>
+
+
+                <!-- due today -->
+                <h5>Due Today</h5>
+                <%var todos=dueToday %>
+                <%-include("todos.ejs",{todos:todos,countType:"count-due-today"}) %>
+
+
+                <!-- due later -->
+                <h5>Due Later</h5>
+                <%var todos=dueLater %>
+                <%-include("todos.ejs",{todos:todos,countType:"count-due-later"}) %>
+            </div>
+        </div>
+    </div>
+    
+    
     <%- include("footer.ejs") %>
     
 </body>
