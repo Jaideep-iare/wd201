@@ -15,9 +15,15 @@ app.set("view engine", "ejs");
 
 app.get("/", async (req, res) => {
   const allTodos = await Todo.getTodos();
+  const overDue = await Todo.getTodosByDate("overdue");
+  const dueToday = await Todo.getTodosByDate("duetoday");
+  const dueLater = await Todo.getTodosByDate("duelater");
   if (req.accepts("html")) {
     res.render("index", {
       allTodos,
+      overDue,
+      dueToday,
+      dueLater,
     });
   } else {
     res.json({ allTodos });
