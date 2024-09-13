@@ -7,6 +7,7 @@ const { Todo } = require("./models");
 const app = express();
 
 app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
 //set ejs as view engine
@@ -53,12 +54,12 @@ app.post("/todos", async (req, res) => {
   console.log("create new todo", req.body);
   try {
     //add a todo
-    const todo = await Todo.addTodo({
+    await Todo.addTodo({
       title: req.body.title,
       dueDate: req.body.dueDate,
       completed: false,
     });
-    return res.json(todo);
+    return res.redirect("/");
   } catch (error) {
     return res.status(422).json(error);
   }
