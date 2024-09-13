@@ -1,33 +1,43 @@
 // const {req,res} = require("express");
 const express = require("express");
-const bodyParser = require("body-parser");
-const path = require("path");
-
-const { Todo } = require("./models");
+var csrf = require("tiny-csrf");
 const app = express();
+const bodyParser = require("body-parser");
+var cookieParser = require("cookie-parser");
+const path = require("path");
 
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(cookieParser("shh! some secret string"));
+app.use(csrf("this_should_be_32_character_long", ["POST", "PUT", "DELETE"]));
 
 //set ejs as view engine
 
 app.set("view engine", "ejs");
 
+app.use(express.static(path.join(__dirname, "public")));
+const { Todo } = require("./models");
+
 app.get("/", async (req, res) => {
-  const allTodos = await Todo.getTodos();
+  // const allTodos = await Todo.getTodos();
   const overDue = await Todo.getTodosByDate("overdue");
   const dueToday = await Todo.getTodosByDate("duetoday");
   const dueLater = await Todo.getTodosByDate("duelater");
   if (req.accepts("html")) {
     res.render("index", {
-      allTodos,
+      // allTodos,
+      overDue,
+      dueToday,
+      dueLater,
+      csrfToken: req.csrfToken(),
+    });
+  } else {
+    res.json({
+      // allTodos,
       overDue,
       dueToday,
       dueLater,
     });
-  } else {
-    res.json({ allTodos });
   }
 });
 
@@ -79,20 +89,9 @@ app.put("/todos/:id/markASCompleted", async (req, res) => {
 
 app.delete("/todos/:id", async (req, res) => {
   console.log(`delete by id ${req.params.id}`);
-
   try {
-    const count = await Todo.destroy({
-      //the no. of rows deleted
-      where: {
-        id: req.params.id,
-      },
-    });
-
-    if (count > 0) {
-      return res.send(true);
-    } else {
-      return res.send(false);
-    }
+    await Todo.remove(req.params.id);
+    return res.json({ success: true });
   } catch (error) {
     res.status(422).json(error);
   }

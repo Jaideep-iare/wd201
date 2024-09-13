@@ -2,7 +2,12 @@ import globals from "globals";
 import pluginJs from "@eslint/js";
 
 export default [
-  { files: ["**/*.js"], languageOptions: { sourceType: "commonjs" } },
+  {
+    files: ["**/*.js"],
+    // Ignore certain directories
+    ignores: ["migrations/", "models/"],
+    languageOptions: { sourceType: "commonjs" },
+  },
   // { languageOptions: { globals: globals.browser, ...globals.node, ...globals.jest  } },
   {
     languageOptions: {
