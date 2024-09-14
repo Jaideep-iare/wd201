@@ -31,6 +31,9 @@ module.exports = (sequelize, DataTypes) => {
             dueDate: {
               [Op.lt]: new Date().toISOString(),
             },
+            completed: {
+              [Op.eq]: false,
+            },
           },
         });
       } else if (duedate === "duetoday") {
@@ -38,6 +41,9 @@ module.exports = (sequelize, DataTypes) => {
           where: {
             dueDate: {
               [Op.eq]: new Date().toISOString(),
+            },
+            completed: {
+              [Op.eq]: false,
             },
           },
         });
@@ -47,12 +53,28 @@ module.exports = (sequelize, DataTypes) => {
             dueDate: {
               [Op.gt]: new Date().toISOString(),
             },
+            completed: {
+              [Op.eq]: false,
+            },
           },
         });
       }
     }
-    markAsCompleted() {
-      return this.update({ completed: true });
+    static getCompletedTodos() {
+      return Todo.findAll({
+        where: {
+          completed: {
+            [Op.eq]: true,
+          },
+        },
+      });
+    }
+    setCompletionStatus(completed) {
+      if (completed === false) {
+        return this.update({ completed: true });
+      } else {
+        return this.update({ completed: false });
+      }
     }
   }
   Todo.init(

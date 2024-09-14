@@ -13,7 +13,7 @@
         .getAttribute("content");
 
         function updateTodo(id){
-            fetch(`/todos/${id}/markASCompleted`,{
+            fetch(`/todos/${id}`,{
                 method:"put",
                 headers:{"Content-Type": "application/json"},
                 body: JSON.stringify({
@@ -71,21 +71,23 @@
             </form>
             <div>
                 <!-- overdues -->
-                <h5>Overdue</h5>
                 <%var todos=overDue %>
-                <%-include("todos.ejs",{todos:todos,countType:"count-overdue"}) %>
+                <%-include("todos.ejs",{todos:todos,countType:"count-overdue",title:"Overdue"}) %>
 
 
                 <!-- due today -->
-                <h5>Due Today</h5>
                 <%var todos=dueToday %>
-                <%-include("todos.ejs",{todos:todos,countType:"count-due-today"}) %>
+                <%-include("todos.ejs",{todos:todos,countType:"count-due-today",title:"Due Today"}) %>
 
 
                 <!-- due later -->
-                <h5>Due Later</h5>
                 <%var todos=dueLater %>
-                <%-include("todos.ejs",{todos:todos,countType:"count-due-later"}) %>
+                <%-include("todos.ejs",{todos:todos,countType:"count-due-later",title:"Due Later"}) %>
+
+
+                <!-- Completed Items -->
+                <%var todos=completedItems %>
+                <%-include("todos.ejs",{todos:todos,countType:"count-completed",title:"Completed Items"}) %>
             </div>
         </div>
     </div>

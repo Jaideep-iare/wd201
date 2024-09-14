@@ -45,7 +45,7 @@ describe("Todo test suite", () => {
     // expect(parsedResponse.id).toBeDefined();
   });
 
-  test("Mark a todo as complete with given id", async () => {
+  test("Mark a todo as complete or incomplete with given id", async () => {
     //extract csrf token
     let res = await agent.get("/");
     let csrfToken = extractCsrfToken(res);
@@ -63,18 +63,65 @@ describe("Todo test suite", () => {
     const dueTodayCount = parsedgroupedResponse.dueToday.length;
     const latestTodo = parsedgroupedResponse.dueToday[dueTodayCount - 1];
 
-    //extract csrf token again
+    //extract csrf token again to mark false as true
     res = await agent.get("/");
     csrfToken = extractCsrfToken(res);
-    const markCompletedResponse = await agent
-      .put(`/todos/${latestTodo.id}/markAsCompleted`)
+    let markCompletedResponse = await agent
+      .put(`/todos/${latestTodo.id}`)
       .send({
         _csrf: csrfToken,
       });
-    const parsedResponse = JSON.parse(markCompletedResponse.text);
+    let parsedResponse = JSON.parse(markCompletedResponse.text);
     expect(parsedResponse.completed).toBe(true);
+
+    //extract csrf token again to mark true as false
+    res = await agent.get("/");
+    csrfToken = extractCsrfToken(res);
+    markCompletedResponse = await agent.put(`/todos/${latestTodo.id}`).send({
+      _csrf: csrfToken,
+    });
+    parsedResponse = JSON.parse(markCompletedResponse.text);
+    expect(parsedResponse.completed).toBe(false);
   });
 
+  test("Delete the todo by Id", async () => {
+    //extract csrf token
+    let res = await agent.get("/");
+    let csrfToken = extractCsrfToken(res);
+
+    await agent.post("/todos").send({
+      title: "Buy milk",
+      dueDate: new Date().toISOString(),
+      completed: false,
+      _csrf: csrfToken,
+    });
+    const groupedTodoResponse = await agent
+      .get("/")
+      .set("Accept", "application/json");
+    const parsedgroupedResponse = JSON.parse(groupedTodoResponse.text);
+    const dueTodayCount = parsedgroupedResponse.dueToday.length;
+    const latestTodo = parsedgroupedResponse.dueToday[dueTodayCount - 1];
+
+    //extract csrf token again for deleting
+    res = await agent.get("/");
+    csrfToken = extractCsrfToken(res);
+    const deletedResponse = await agent.delete(`/todos/${latestTodo.id}`).send({
+      _csrf: csrfToken,
+    });
+    console.log(Response);
+    expect(deletedResponse.statusCode).toBe(200);
+
+    //try to access the deleted todo
+    res = await agent.get("/");
+    csrfToken = extractCsrfToken(res);
+
+    const getTodo = await agent.get(`/todos/${latestTodo.id}`).send({
+      _csrf: csrfToken,
+    });
+    expect(getTodo.statusCode).toBe(200); //we will get response as null in json format
+    const parsedGetTodo = JSON.parse(getTodo.text);
+    expect(parsedGetTodo).toBeNull(); //convert it to object and check for null
+  });
   // test("find all todos ", async () => {
   //   await agent.post("/todos").send({
   //     title: "Add a todo",
@@ -92,25 +139,5 @@ describe("Todo test suite", () => {
 
   //   expect(parsedResponse.length).toBe(4);
   //   expect(parsedResponse[3].title).toBe("Add a todo");
-  // });
-
-  // test("Delete the todo by Id", async () => {
-  //   //this ensures there is a todo to get deleted
-  //   const response = await agent.post("/todos").send({
-  //     title: "todo to be deleted",
-  //     dueDate: new Date().toISOString(),
-  //     completed: false,
-  //   });
-  //   const parsedResponse = JSON.parse(response.text);
-  //   const todoId = parsedResponse.id;
-  //   const deletedResponse = await agent.delete(`/todos/${todoId}`);
-  //   expect(deletedResponse.statusCode).toBe(200);
-  //   expect(deletedResponse["text"]).toBe("true");
-
-  //   //try to access the deleted todo
-  //   const getTodo = await agent.get(`/todos/${todoId}`);
-  //   expect(getTodo.statusCode).toBe(200); //we will get response as null in json format
-  //   const parsedGetTodo = JSON.parse(getTodo.text);
-  //   expect(parsedGetTodo).toBeNull(); //convert it to object and check for null
   // });
 });
