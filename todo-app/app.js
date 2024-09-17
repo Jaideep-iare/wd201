@@ -6,6 +6,14 @@ const bodyParser = require("body-parser");
 var cookieParser = require("cookie-parser");
 const path = require("path");
 
+const passport = require("passport");
+const localStrategy = require("passport-local");
+const connectEnsureLogin = require("connect-ensure-login");
+const session = require("express-session");
+
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
+
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser("shh! some secret string"));
@@ -16,16 +24,80 @@ app.use(csrf("this_should_be_32_character_long", ["POST", "PUT", "DELETE"]));
 app.set("view engine", "ejs");
 
 app.use(express.static(path.join(__dirname, "public")));
-const { Todo } = require("./models");
+const { Todo, User } = require("./models");
+// const { title } = require("process");
+// const { error } = require("console");
+
+//define session duration:
+app.use(
+  session({
+    secret: "my-super-secret-key-215472655657",
+    cookie: {
+      maxAge: 24 * 60 * 60 * 1000, //24 hours
+    },
+  })
+);
+
+//ask passport to work with express application:
+app.use(passport.initialize());
+app.use(passport.session());
+
+//define authentication local strategy for passport:
+passport.use(
+  new localStrategy(
+    {
+      usernameField: "email",
+      passwordField: "password",
+    },
+    (username, password, done) => {
+      User.findOne({ where: { email: username } })
+        .then(async (user) => {
+          const result = await bcrypt.compare(password, user.password);
+          if (result) {
+            return done(null, user); //authentication successful
+          } else {
+            return done("Invalid password");
+          }
+        })
+        .catch((error) => {
+          return error;
+        });
+    }
+  )
+);
+
+//After the user authenticated,store user in the session by serializing the user data:
+passport.serializeUser((user, done) => {
+  console.log("Serializing the user in the session", user.id);
+  done(null, user.id);
+});
+
+//deserialize user
+passport.deserializeUser((id, done) => {
+  User.findByPk(id)
+    .then((user) => {
+      done(null, user);
+    })
+    .catch((error) => {
+      done(error, null);
+    });
+});
 
 app.get("/", async (req, res) => {
+  res.render("index", {
+    csrfToken: req.csrfToken(),
+  });
+});
+
+app.get("/todos", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
   // const allTodos = await Todo.getTodos();
-  const overDue = await Todo.getTodosByDate("overdue");
-  const dueToday = await Todo.getTodosByDate("duetoday");
-  const dueLater = await Todo.getTodosByDate("duelater");
-  const completedItems = await Todo.getCompletedTodos();
+  const loggedInUser = req.user.id;
+  const overDue = await Todo.getTodosByDate("overdue", loggedInUser);
+  const dueToday = await Todo.getTodosByDate("duetoday", loggedInUser);
+  const dueLater = await Todo.getTodosByDate("duelater", loggedInUser);
+  const completedItems = await Todo.getCompletedTodos(loggedInUser);
   if (req.accepts("html")) {
-    res.render("index", {
+    res.render("todos", {
       // allTodos,
       overDue,
       dueToday,
@@ -42,18 +114,17 @@ app.get("/", async (req, res) => {
     });
   }
 });
+// app.get("/todos", async (req, res) => {
+//   console.log("Todo list");
+//   try {
+//     const todos = await Todo.findAll();
+//     return res.json(todos);
+//   } catch (error) {
+//     return res.status(422).json(error);
+//   }
+// });
 
-app.get("/todos", async (req, res) => {
-  console.log("Todo list");
-  try {
-    const todos = await Todo.findAll();
-    return res.json(todos);
-  } catch (error) {
-    return res.status(422).json(error);
-  }
-});
-
-app.get("/todos/:id", async (req, res) => {
+app.get("/todos/:id", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
   try {
     const todo = await Todo.findByPk(req.params.id);
     return res.json(todo);
@@ -62,22 +133,24 @@ app.get("/todos/:id", async (req, res) => {
   }
 });
 
-app.post("/todos", async (req, res) => {
+app.post("/todos", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
   console.log("create new todo", req.body);
+  console.log(req.user);
   try {
     //add a todo
     await Todo.addTodo({
       title: req.body.title,
       dueDate: req.body.dueDate,
       completed: false,
+      userId: req.user.id,
     });
-    return res.redirect("/");
+    return res.redirect("/todos");
   } catch (error) {
     return res.status(422).json(error);
   }
 });
 
-app.put("/todos/:id", async (req, res) => {
+app.put("/todos/:id", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
   console.log(`Change completed status of id ${req.params.id}`);
   const todo = await Todo.findByPk(req.params.id);
 
@@ -89,14 +162,77 @@ app.put("/todos/:id", async (req, res) => {
   }
 });
 
-app.delete("/todos/:id", async (req, res) => {
-  console.log(`delete by id ${req.params.id}`);
-  try {
-    await Todo.remove(req.params.id);
-    return res.json({ success: true });
-  } catch (error) {
-    res.status(422).json(error);
+app.delete(
+  "/todos/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (req, res) => {
+    console.log(`delete by id ${req.params.id}`);
+    try {
+      await Todo.remove(req.params.id, req.user.id);
+      return res.json({ success: true });
+    } catch (error) {
+      res.status(422).json(error);
+    }
   }
+);
+
+//sign Up
+app.get("/signup", (req, res) => {
+  res.render("signup", {
+    title: "Signup",
+    csrfToken: req.csrfToken(),
+  });
+});
+
+//add data on sign-up to users model
+app.post("/users", async (req, res) => {
+  //hash the user password
+  const hashedPwd = await bcrypt.hash(req.body.password, saltRounds);
+  console.log(hashedPwd);
+  try {
+    const user = await User.create({
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      email: req.body.email,
+      password: hashedPwd,
+    });
+    req.login(user, (err) => {
+      if (err) {
+        console.log(err);
+      }
+      res.redirect("/todos");
+    });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+//signIn
+app.get("/login", (req, res) => {
+  res.render("login", {
+    title: "login",
+    csrfToken: req.csrfToken(),
+  });
+});
+
+//define session for login using passport.authenticate
+app.post(
+  "/session",
+  passport.authenticate("local", { failureRedirect: "/login" }),
+  (req, res) => {
+    console.log(req.user);
+    res.redirect("/todos"); //on successful login
+  }
+);
+
+//signout
+app.get("/signout", (req, res, next) => {
+  req.logout((err) => {
+    if (err) {
+      return next(err);
+    }
+    res.redirect("/");
+  });
 });
 
 module.exports = app;

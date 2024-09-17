@@ -8,32 +8,40 @@ module.exports = (sequelize, DataTypes) => {
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    // static associate(models) {
-    //   // define association here
-    // }
-    static addTodo({ title, dueDate }) {
-      return this.create({ title: title, dueDate: dueDate, completed: false });
+    static associate(models) {
+      // define association here
+      Todo.belongsTo(models.User, {
+        foreignKey: "userId",
+      });
     }
-    static remove(id) {
+    static addTodo({ title, dueDate, userId }) {
+      return this.create({
+        title: title,
+        dueDate: dueDate,
+        completed: false,
+        userId,
+      });
+    }
+    static remove(id, userId) {
       return this.destroy({
         where: {
           id,
+          userId,
         },
       });
     }
     static getTodos() {
       return this.findAll();
     }
-    static getTodosByDate(duedate) {
+    static getTodosByDate(duedate, userId) {
       if (duedate === "overdue") {
         return Todo.findAll({
           where: {
             dueDate: {
               [Op.lt]: new Date().toISOString(),
             },
-            completed: {
-              [Op.eq]: false,
-            },
+            completed: false,
+            userId,
           },
         });
       } else if (duedate === "duetoday") {
@@ -42,9 +50,8 @@ module.exports = (sequelize, DataTypes) => {
             dueDate: {
               [Op.eq]: new Date().toISOString(),
             },
-            completed: {
-              [Op.eq]: false,
-            },
+            completed: false,
+            userId,
           },
         });
       } else {
@@ -53,19 +60,17 @@ module.exports = (sequelize, DataTypes) => {
             dueDate: {
               [Op.gt]: new Date().toISOString(),
             },
-            completed: {
-              [Op.eq]: false,
-            },
+            completed: false,
+            userId,
           },
         });
       }
     }
-    static getCompletedTodos() {
+    static getCompletedTodos(userId) {
       return Todo.findAll({
         where: {
-          completed: {
-            [Op.eq]: true,
-          },
+          completed: true,
+          userId,
         },
       });
     }

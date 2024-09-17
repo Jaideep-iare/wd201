@@ -13,6 +13,7 @@
   "author": "Jaideep <21951a0567@iare.ac.in>",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
@@ -29,12 +30,16 @@
   "devDependencies": {
     "@eslint/js": "^9.9.1",
     "cheerio": "^1.0.0",
+    "connect-ensure-login": "^0.1.1",
     "eslint": "^9.9.1",
+    "express-session": "^1.18.0",
     "globals": "^15.9.0",
     "husky": "^8.0.3",
     "jest": "^29.7.0",
     "lint-staged": "^13.3.0",
     "nodemon": "^3.1.4",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
     "prettier": "^2.8.8",
     "sequelize-cli": "^6.6.2",
     "supertest": "^6.3.4"
