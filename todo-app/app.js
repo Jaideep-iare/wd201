@@ -95,9 +95,13 @@ app.use(function (req, res, next) {
 });
 
 app.get("/", async (req, res) => {
-  res.render("index", {
-    csrfToken: req.csrfToken(),
-  });
+  if (req.isAuthenticated()) {
+    res.redirect("/todos");
+  } else {
+    res.render("index", {
+      csrfToken: req.csrfToken(),
+    });
+  }
 });
 
 app.get("/todos", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
@@ -197,10 +201,15 @@ app.get("/signup", (req, res) => {
 
 //add data on sign-up to users model
 app.post("/users", async (req, res) => {
-  //hash the user password
-  const hashedPwd = await bcrypt.hash(req.body.password, saltRounds);
-  console.log(hashedPwd);
   try {
+    if (!req.body.password || req.body.password.trim() === "") {
+      req.flash("error", "Password cannot be empty");
+      return res.redirect("/signup");
+    }
+    //hash the user password
+    const hashedPwd = await bcrypt.hash(req.body.password, saltRounds);
+    console.log(hashedPwd);
+
     const user = await User.create({
       firstName: req.body.firstName,
       lastName: req.body.lastName,
@@ -216,11 +225,6 @@ app.post("/users", async (req, res) => {
       res.redirect("/todos");
     });
   } catch (error) {
-    // if (error.name === "SequelizeUniqueConstraintError") {
-    //   error.errors.forEach((err) => {
-    //     req.flash("error", err.message);
-    //   }); //duplicate account
-    // } else
     if (error.name === "SequelizeValidationError") {
       error.errors.forEach((err) => {
         req.flash("error", err.message); // Handle validation errors (e.g., firstName required)
@@ -248,7 +252,7 @@ app.post(
   "/session",
   passport.authenticate("local", {
     failureRedirect: "/login",
-    failureFlash: "Invalid email or password", // Flash message on failure
+    failureFlash: true,
   }),
   (req, res) => {
     console.log(req.user);
