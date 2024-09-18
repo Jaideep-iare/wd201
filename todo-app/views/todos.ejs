@@ -53,15 +53,25 @@
         <div class="col-start-3 col-span-2">
             <%- include("header.ejs") %>
             <a href="/signout">Signout</a>
+            <!-- flash message when wrong-->
+            <div class="text-red-600 pt-2 text-xs">
+                <% if (messages.error && messages.error.length > 0) { %>
+                    <ul>
+                        <% messages.error.forEach((message)=> { %>
+                        <li><%= message %></li>
+                        <% }); %>
+                    </ul>
+                <% } %>
+            </div>
             <form action="/todos" method="post">
                 <input type="hidden" name="_csrf" value="<%=csrfToken%>">
                 <div class="flex gap-2 py-4">
                     <div class="flex-auto">
-                        <input type="text" name="title" id="" placeholder="What's new?" required
+                        <input type="text" name="title" id="" placeholder="What's new?" 
                         class="border border-grey-300 rounded text-grey text-sm p-2">
                     </div>
                     <div class="flex-auto">
-                        <input type="date" name="dueDate" id="" required
+                        <input type="date" name="dueDate" id="" 
                         class="border border-grey-300 rounded text-grey text-sm p-2 leading-4">
                     </div>
                     <div class="flex-none">

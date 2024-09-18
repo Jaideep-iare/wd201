@@ -10,6 +10,7 @@ const passport = require("passport");
 const localStrategy = require("passport-local");
 const connectEnsureLogin = require("connect-ensure-login");
 const session = require("express-session");
+const flash = require("connect-flash");
 
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
@@ -24,6 +25,7 @@ app.use(csrf("this_should_be_32_character_long", ["POST", "PUT", "DELETE"]));
 app.set("view engine", "ejs");
 
 app.use(express.static(path.join(__dirname, "public")));
+app.set("views", path.join(__dirname, "views"));
 const { Todo, User } = require("./models");
 // const { title } = require("process");
 // const { error } = require("console");
@@ -56,7 +58,7 @@ passport.use(
           if (result) {
             return done(null, user); //authentication successful
           } else {
-            return done("Invalid password");
+            return done(null, false, { message: "Invalid password" });
           }
         })
         .catch((error) => {
@@ -81,6 +83,15 @@ passport.deserializeUser((id, done) => {
     .catch((error) => {
       done(error, null);
     });
+});
+
+//flash function to connect the connect-flash
+app.use(flash());
+
+//Implementing flash messages
+app.use(function (req, res, next) {
+  res.locals.messages = req.flash();
+  next();
 });
 
 app.get("/", async (req, res) => {
@@ -114,15 +125,6 @@ app.get("/todos", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
     });
   }
 });
-// app.get("/todos", async (req, res) => {
-//   console.log("Todo list");
-//   try {
-//     const todos = await Todo.findAll();
-//     return res.json(todos);
-//   } catch (error) {
-//     return res.status(422).json(error);
-//   }
-// });
 
 app.get("/todos/:id", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
   try {
@@ -132,12 +134,11 @@ app.get("/todos/:id", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
     res.status(422).json(error);
   }
 });
-
+//add a todo
 app.post("/todos", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
   console.log("create new todo", req.body);
   console.log(req.user);
   try {
-    //add a todo
     await Todo.addTodo({
       title: req.body.title,
       dueDate: req.body.dueDate,
@@ -146,7 +147,17 @@ app.post("/todos", connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
     });
     return res.redirect("/todos");
   } catch (error) {
-    return res.status(422).json(error);
+    console.log(error);
+    if (error.name === "SequelizeValidationError") {
+      error.errors.forEach((err) => {
+        req.flash("error", err.message);
+      });
+    } else if (error.name === "SequelizeDatabaseError") {
+      req.flash("error", "Invalid date");
+    } else {
+      req.flash("error", "Some unexpected error occured...");
+    }
+    res.redirect("/todos");
   }
 });
 
@@ -198,12 +209,25 @@ app.post("/users", async (req, res) => {
     });
     req.login(user, (err) => {
       if (err) {
-        console.log(err);
+        req.flash("error", "Login failed after signup.");
+        return res.redirect("/signup");
       }
       res.redirect("/todos");
     });
   } catch (error) {
-    console.log(error);
+    if (error.name === "SequelizeUniqueConstraintError") {
+      error.errors.forEach((err) => {
+        req.flash("error", err.message);
+      }); //duplicate account
+    } else if (error.name === "SequelizeValidationError") {
+      error.errors.forEach((err) => {
+        req.flash("error", err.message); // Handle validation errors (e.g., firstName required)
+      });
+    } else {
+      req.flash("error", "something unexpected happened");
+    }
+    // req.flash('error', 'Error during signup.');
+    res.redirect("/signup");
   }
 });
 
@@ -218,7 +242,10 @@ app.get("/login", (req, res) => {
 //define session for login using passport.authenticate
 app.post(
   "/session",
-  passport.authenticate("local", { failureRedirect: "/login" }),
+  passport.authenticate("local", {
+    failureRedirect: "/login",
+    failureFlash: "Invalid email or password", // Flash message on failure
+  }),
   (req, res) => {
     console.log(req.user);
     res.redirect("/todos"); //on successful login
