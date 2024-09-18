@@ -209,25 +209,29 @@ app.post("/users", async (req, res) => {
     });
     req.login(user, (err) => {
       if (err) {
-        req.flash("error", "Login failed after signup.");
-        return res.redirect("/signup");
+        console.log(err);
+        // req.flash("error", "Login failed after signup.");
+        // return res.redirect("/signup");
       }
       res.redirect("/todos");
     });
   } catch (error) {
-    if (error.name === "SequelizeUniqueConstraintError") {
-      error.errors.forEach((err) => {
-        req.flash("error", err.message);
-      }); //duplicate account
-    } else if (error.name === "SequelizeValidationError") {
+    // if (error.name === "SequelizeUniqueConstraintError") {
+    //   error.errors.forEach((err) => {
+    //     req.flash("error", err.message);
+    //   }); //duplicate account
+    // } else
+    if (error.name === "SequelizeValidationError") {
       error.errors.forEach((err) => {
         req.flash("error", err.message); // Handle validation errors (e.g., firstName required)
       });
+      return res.redirect("/signup");
     } else {
       req.flash("error", "something unexpected happened");
+      return res.redirect("/signup");
     }
     // req.flash('error', 'Error during signup.');
-    res.redirect("/signup");
+    // res.redirect("/signup");
   }
 });
 
